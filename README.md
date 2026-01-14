@@ -38,5 +38,13 @@
 
 ## 🚀 快速开始
 ```bash
-# 下载并运行
-sudo bash <(curl -s https://raw.githubusercontent.com/CHERISHTOBY/Vps-Zsh-TagBoard/main/Vps-Zsh-TagBoard)
+curl -s https://raw.githubusercontent.com/CHERISHTOBY/Vps-Zsh-TagBoard/main/Vps-Zsh-TagBoard | sudo bash
+```
+
+## 📝 安装说明
+- 该脚本需要sudo权限运行
+- 如果提示command not found: curl，请先安装curl：
+```
+# Ubuntu/Debian
+sudo apt install curl
+```
