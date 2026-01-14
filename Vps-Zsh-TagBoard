@@ -100,7 +100,7 @@ while true; do
                START_M=$PAY_MONTH
                break
            else
-               echo -e "\e[1;31m输入错误：请输入 1-12 之间的月份！ (╯‵□′)╯︵┻━┻ \e[0m"
+               echo -e "\e[1;31m输入错误：请好好输入月份！ (╯‵□′)╯︵┻━┻ \e[0m"
            fi
        done
        # 2. 锁死周期
@@ -118,7 +118,7 @@ while true; do
        SAFE_D="$PAY_DAY"
        break
    else
-       echo -e "\e[1;31m输入错误：请输入 1-31 之间的日期或直接回车！(╯°□°）╯︵ ┻━┻ \e[0m"
+       echo -e "\e[1;31m输入错误：请好好输入日期或直接回车！(╯°□°）╯︵ ┻━┻ \e[0m"
    fi
 done
 CPU_CORES=$(nproc)
