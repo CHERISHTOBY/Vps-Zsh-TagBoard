@@ -25,6 +25,12 @@
 ```bash
 [Debian GNU/Linux 13 (trixie)] 2C/1GB
 到期: 永久 (∞) • 甲骨文 • 东京 • NTT
+
+[Debian GNU/Linux 13 (trixie)] 2C/2GB
+到期: 2026-03-07 (52d) • Bandwagon • LA • CN2 
+
+[Debian GNU/Linux 13 (trixie)] 2C/2GB
+到期: 永久 (∞) • 公司云 • 数据库专用 • 谨慎操作！ 
 ```
 
 
