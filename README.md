@@ -39,4 +39,4 @@
 ## 🚀 快速开始
 ```bash
 # 下载并运行
-bash <(curl -s https://raw.githubusercontent.com/CHERISHTOBY/Vps-Zsh-TagBoard/main/VPS-Zsh-TagBoard.sh)
+bash <(curl -s https://raw.githubusercontent.com/CHERISHTOBY/Vps-Zsh-TagBoard/main/Vps-Zsh-TagBoard)
