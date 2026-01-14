@@ -7,7 +7,7 @@
 ### 🎨 终端美化
 - 自动安装并配置Zsh
 - 操作系统智能着色（Debian/Ubuntu/Kali等不同颜色）
-- Root用户红色警示提示符
+- Root用户红色警示提示符（需要手动开启）
 - 增强的命令补全和历史记录
 
 ### 🏷️ 标签显示系统
@@ -46,3 +46,4 @@ sudo bash -c "$(curl -s https://raw.githubusercontent.com/CHERISHTOBY/Vps-Zsh-Ta
 
 ## 📝 安装说明
 - 该脚本需要sudo权限运行
+- 给root开启Zsh配置需手动注释37，72行
