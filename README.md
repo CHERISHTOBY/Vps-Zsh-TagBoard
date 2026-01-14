@@ -46,4 +46,7 @@ sudo bash -c "$(curl -s https://raw.githubusercontent.com/CHERISHTOBY/Vps-Zsh-Ta
 
 ## 📝 安装说明
 - 该脚本需要sudo权限运行
-- Root开启Zsh配置需手动注释37，72行
+- **Root 保持默认 Bash 环境（不配置 Zsh）**
+  - 如需为 Root 配置 Zsh，请手动取消以下行的注释：
+    - 第 37 行：`# sudo chsh -s $(which zsh) root`
+    - 第 72 行：`# write_zshrc "/root" "true"`
