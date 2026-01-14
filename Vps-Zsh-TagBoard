@@ -69,7 +69,7 @@ ZSHRC_EOF"
        sudo bash -c "echo 'PROMPT=\"%F{\$MY_CLR}%n@%m%f:%F{blue}%~%f%# \"' >> $ZSHRC_PATH"
    fi
 }
-write_zshrc "/root" "true"
+# write_zshrc "/root" "true"  # 安全保留：root 使用默认 Bash，避免卸载锁死
 TARGET_HOME=$(eval echo "~$TARGET_USER")
 write_zshrc "$TARGET_HOME" "false"
 # --- 4. 欢迎看板配置 ---
