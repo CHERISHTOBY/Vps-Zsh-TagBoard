@@ -1,0 +1,204 @@
+#!/bin/bash
+# ==========================================================
+# 脚本名称: Debian延伸版专用 Zsh 看板脚本 (输入校验与逻辑优化版)
+# ==========================================================
+set -e
+# --- 0. 提权工具检测 ---
+if ! command -v sudo &> /dev/null; then
+   if [ "$(id -u)" -eq 0 ]; then
+       apt update && apt install sudo -y
+   else
+       echo "错误: 请以 root 身份运行。"
+       exit 1
+   fi
+fi
+# --- 1. 环境检测与基础安装 ---
+if [ ! -f /etc/debian_version ]; then
+   echo "错误: 此脚本仅支持 Debian 及其延伸版。"
+   exit 1
+fi
+sudo apt update && sudo apt install zsh grep curl -y
+# --- 2. 用户与权限配置 ---
+REAL_USER=${SUDO_USER:-$(whoami)}
+read -re -p "请输入要配置的用户名 (默认 '$REAL_USER'): " TARGET_USER
+TARGET_USER=${TARGET_USER:-$REAL_USER}
+IS_NEW_USER=false
+if ! id "$TARGET_USER" &>/dev/null; then
+   sudo useradd -m -s $(which zsh) "$TARGET_USER"
+   IS_NEW_USER=true
+fi
+SUDO_CONF="/etc/sudoers.d/$TARGET_USER"
+sudo bash -c "cat << 'SUDO_EOF' > $SUDO_CONF
+# DEBIAN-ZSH-DASHBOARD
+$TARGET_USER ALL=(ALL) NOPASSWD:ALL
+SUDO_EOF"
+sudo chmod 0440 "$SUDO_CONF"
+sudo chsh -s $(which zsh) "$TARGET_USER"
+sudo chsh -s $(which zsh) root
+# --- 3. Zsh 核心配置注入 ---
+write_zshrc() {
+   local HOME_DIR=$1
+   local IS_ROOT=$2
+   local ZSHRC_PATH="$HOME_DIR/.zshrc"
+   local BAK_DATE=$(date +%Y%m%d)
+   if [ -f "$ZSHRC_PATH" ] && ! ls $HOME_DIR/.zshrc.20*.bak &>/dev/null; then
+       sudo cp "$ZSHRC_PATH" "$HOME_DIR/.zshrc.${BAK_DATE}.bak"
+   fi
+   sudo bash -c "cat << 'ZSHRC_EOF' > $ZSHRC_PATH
+# DEBIAN-ZSH-DASHBOARD
+autoload -Uz compinit && compinit
+zstyle ':completion:*' menu select
+HISTSIZE=5000
+SAVEHIST=5000
+setopt SHARE_HISTORY
+autoload -U up-line-or-beginning-search && zle -N up-line-or-beginning-search
+bindkey \"^[[A\" up-line-or-beginning-search
+bindkey \"^[[B\" down-line-or-beginning-search
+if [[ -f /etc/os-release ]]; then
+   OS_ID=\$(grep -E '^ID=' /etc/os-release | cut -d= -f2 | tr -d '\"')
+fi
+typeset -A colors
+colors=(debian 125 ubuntu 202 kali 231 raspbian 125 pop 202 deepin 125 devuan 60 default 10)
+MY_CLR=\${colors[\$OS_ID]:-\$colors[default]}
+ZSHRC_EOF"
+   if [ "$IS_ROOT" = "true" ]; then
+       sudo bash -c "echo 'PROMPT=\"%(#.%F{red}.%F{\$MY_CLR})%n@%m%f:%F{blue}%~%f%# \"' >> $ZSHRC_PATH"
+   else
+       sudo bash -c "echo 'PROMPT=\"%F{\$MY_CLR}%n@%m%f:%F{blue}%~%f%# \"' >> $ZSHRC_PATH"
+   fi
+}
+write_zshrc "/root" "true"
+TARGET_HOME=$(eval echo "~$TARGET_USER")
+write_zshrc "$TARGET_HOME" "false"
+# --- 4. 欢迎看板配置 ---
+echo -e "\n--- 自定义看板信息 ---"
+read -re -p "看板 1 (厂商/用途): " IN_P
+IN_P=${IN_P:0:120}
+read -re -p "看板 2 (位置/归属): " IN_L
+IN_L=${IN_L:0:120}
+read -re -p "看板 3 (网络/警示): " IN_N
+IN_N=${IN_N:0:120}
+echo "--- 到期设置 ---"
+# 【优化点：锁死账单日输入】
+while true; do
+   read -re -p "账单日 (1-31日，回车设为“永久”): " PAY_DAY
+   if [[ -z "$PAY_DAY" ]]; then
+       ADD_VAL="infinite"
+       START_M="0"
+       SAFE_D="0"
+       break
+   elif [[ "$PAY_DAY" =~ ^[0-9]+$ ]] && [ "$PAY_DAY" -ge 1 ] && [ "$PAY_DAY" -le 31 ]; then
+       # 【优化点：仅在非永久模式下询问后续项】
+       # 1. 锁死月份
+       while true; do
+           read -re -p "开通/续费月份 (1-12月, 默认本月): " PAY_MONTH
+           if [[ -z "$PAY_MONTH" ]]; then
+               START_M=$(date +%m)
+               break
+           elif [[ "$PAY_MONTH" =~ ^[0-9]+$ ]] && [ "$PAY_MONTH" -ge 1 ] && [ "$PAY_MONTH" -le 12 ]; then
+               START_M=$PAY_MONTH
+               break
+           else
+               echo -e "\e[1;31m输入错误：请输入 1-12 之间的月份！ (╯‵□′)╯︵┻━┻ \e[0m"
+           fi
+       done
+       # 2. 锁死周期
+       while true; do
+           echo "选择账单周期: 1.月付 2.季付 3.半年 4.年付（默认）"
+           read -p "请输入编号 (1-4): " CYCLE_OPT
+           case ${CYCLE_OPT:-4} in
+               1) ADD_VAL="1 month"; break ;;
+               2) ADD_VAL="3 month"; break ;;
+               3) ADD_VAL="6 month"; break ;;
+               4) ADD_VAL="1 year"; break ;;
+               *) echo -e "\e[1;31m输入错误：请输入编号 1-4！\e[0m" ;;
+           esac
+       done
+       SAFE_D="$PAY_DAY"
+       break
+   else
+       echo -e "\e[1;31m输入错误：请输入 1-31 之间的日期或直接回车！(╯°□°）╯︵ ┻━┻ \e[0m"
+   fi
+done
+CPU_CORES=$(nproc)
+MEM_RAW=$(( $(grep MemTotal /proc/meminfo | awk '{print $2}') / 1024 ))
+MEM_SIZE=$([ "$MEM_RAW" -lt 900 ] && echo "${MEM_RAW}MB" || echo "$(( ($MEM_RAW + 512) / 1024 ))GB")
+OS_NAME=$(grep "PRETTY_NAME" /etc/os-release | cut -d '"' -f 2 || uname -sr)
+# 写入 .welcome.sh
+sudo bash -c "cat << 'WELCOME_EOF' > $TARGET_HOME/.welcome.sh
+#!/bin/zsh
+WHITE='\e[0;37m'
+RED='\e[1;31m'
+GREEN='\e[1;32m'
+YELLOW='\033[1;33m'
+RESET='\e[0m'
+if [ \"$ADD_VAL\" = \"infinite\" ]; then
+   DISP=\"\${WHITE}永久 (∞)\"
+else
+   ANCHOR_D=$SAFE_D
+   ADD_STR=\"$ADD_VAL\"
+   INIT_M=$START_M
+   INIT_Y=\$(date +%Y)
+   
+   NOW_TS=\$(date +%s)
+   # 初始日期处理
+   LAST_D_INIT=\$(date -d \"\$INIT_Y-\$INIT_M-01 +1 month -1 day\" +%d)
+   [ \"\$ANCHOR_D\" -gt \"\$LAST_D_INIT\" ] && ACT_D=\$LAST_D_INIT || ACT_D=\$ANCHOR_D
+   TARGET_TS=\$(date -d \"\$INIT_Y-\$INIT_M-\$ACT_D 23:59:59\" +%s)
+   LOOP_GUARD=0
+   while [ \"\$TARGET_TS\" -lt \"\$NOW_TS\" ] && [ \"\$LOOP_GUARD\" -lt 100 ]; do
+       # --- 核心修复：基于当前目标日期的 1 号进行偏移，防止月份溢出 ---
+       CUR_Y=\$(date -d \"@\$TARGET_TS\" +%Y)
+       CUR_M=\$(date -d \"@\$TARGET_TS\" +%m)
+       
+       # 先跳到下个周期的 1 号
+       NEXT_BASE_Y=\$(date -d \"\$CUR_Y-\$CUR_M-01 + \$ADD_STR\" +%Y)
+       NEXT_BASE_M=\$(date -d \"\$CUR_Y-\$CUR_M-01 + \$ADD_STR\" +%m)
+       
+       # 再计算该月实际应有的最后一天（针对 28/29/30/31 号的对齐）
+       LAST_D_NEXT=\$(date -d \"\$NEXT_BASE_Y-\$NEXT_BASE_M-01 +1 month -1 day\" +%d)
+       [ \"\$ANCHOR_D\" -gt \"\$LAST_D_NEXT\" ] && ACT_D=\$LAST_D_NEXT || ACT_D=\$ANCHOR_D
+       
+       TARGET_TS=\$(date -d \"\$NEXT_BASE_Y-\$NEXT_BASE_M-\$ACT_D 23:59:59\" +%s)
+       ((LOOP_GUARD++))
+   done
+   EXP_DATE=\$(date -d \"@\$TARGET_TS\" +%Y-%m-%d)
+   # 以当天 0 点为基准计算天数
+   TODAY_ZERO=\$(date -d \"\$(date +%Y-%m-%d) 00:00:00\" +%s)
+   DAYS_LEFT=\$(( (TARGET_TS - TODAY_ZERO) / 86400 ))
+   if [ \"\$DAYS_LEFT\" -lt 0 ]; then
+       DISP=\"\${RED}配置异常 (✘﹏✘)\"
+   elif [ \"\$DAYS_LEFT\" -eq 0 ]; then
+       DISP=\"\${YELLOW}到期啦，就是今天！(๑•̀ㅂ•́)و✧\"
+   else
+       if [ \"\$DAYS_LEFT\" -le 7 ]; then
+           DISP=\"\${WHITE}\$EXP_DATE \${RED}(\${DAYS_LEFT}d)\"
+       else
+           DISP=\"\${WHITE}\$EXP_DATE (\${DAYS_LEFT}d)\"
+       fi
+   fi
+fi
+TAGS=\"\"
+for val in \"$IN_P\" \"$IN_L\" \"$IN_N\"; do
+   [ -n \"\$val\" ] && TAGS=\"\$TAGS • \$val\"
+done
+echo \"\"
+echo -e \"\${WHITE}[$OS_NAME] ${CPU_CORES}C/${MEM_SIZE}\${RESET}\"
+echo -e \"\${WHITE}到期: \$DISP\${WHITE}\$TAGS \${RESET}\"
+echo \"\"
+WELCOME_EOF"
+sudo chmod +x "$TARGET_HOME/.welcome.sh"
+sudo bash -c "echo '[[ -f ~/.zshrc ]] && source ~/.zshrc' > $TARGET_HOME/.zprofile"
+sudo bash -c "echo '[[ -f ~/.welcome.sh ]] && zsh ~/.welcome.sh' >> $TARGET_HOME/.zprofile"
+sudo chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/.welcome.sh" "$TARGET_HOME/.zprofile"
+echo -e "\n状态: 配置完成！"
+echo "------------------------------------------------"
+echo "1. 立即切换环境: exec su - $TARGET_USER"
+[ "$IS_NEW_USER" = true ] && echo "2. 新用户设置密码: sudo passwd $TARGET_USER"
+echo "备份提示: 原始 .zshrc 已备份至 ~/.zshrc.20*.bak"
+echo "------------------------------------------------"
+echo "配置管理 (按需执行):"
+echo " - 仅移除看板: rm ~/.welcome.sh ~/.zprofile"
+echo " - 还原默认 Shell: chsh -s /bin/bash"
+echo " - 彻底卸载 Zsh: sudo apt remove --purge zsh -y"
+echo -e "\n\e[1;31m警告：卸载前必须先还原 Shell！否则将无法登录系统！\e[0m"
