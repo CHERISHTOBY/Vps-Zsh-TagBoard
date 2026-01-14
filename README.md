@@ -31,6 +31,9 @@
 
 [Debian GNU/Linux 13 (trixie)] 2C/2GB
 到期: 永久 (∞) • 公司云 • 数据库专用 • 谨慎操作！ 
+
+[Debian GNU/Linux 13 (trixie)] 4C/4GB
+到期: 永久 (∞) • 树莓派4B • 折腾用 • 随便玩 
 ```
 
 
