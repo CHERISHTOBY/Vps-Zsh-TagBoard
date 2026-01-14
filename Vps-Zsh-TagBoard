@@ -34,7 +34,8 @@ $TARGET_USER ALL=(ALL) NOPASSWD:ALL
 SUDO_EOF"
 sudo chmod 0440 "$SUDO_CONF"
 sudo chsh -s $(which zsh) "$TARGET_USER"
-sudo chsh -s $(which zsh) root
+# sudo chsh -s $(which zsh) root  # 设计缺陷：root Shell 绑定 Zsh 但无卸载保护，存在锁死风险。
+
 # --- 3. Zsh 核心配置注入 ---
 write_zshrc() {
    local HOME_DIR=$1
