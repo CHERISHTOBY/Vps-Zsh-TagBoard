@@ -47,6 +47,7 @@ write_zshrc() {
    sudo bash -c "cat << 'ZSHRC_EOF' > $ZSHRC_PATH
 # VPS-ZSH-TAGBOARD
 autoload -Uz compinit && compinit
+setopt interactive_comments    # 允许在交互Shell中使用#注释
 zstyle ':completion:*' menu select
 HISTSIZE=5000
 SAVEHIST=5000
