@@ -34,5 +34,5 @@
 ```bash
 # 下载并运行脚本
 curl -O https://example.com/VPS-Zsh-Dashboard.sh
-sudo bash VPS-Zsh-Dashboard.sh
+sudo bash VPS-Zsh-TagBoard.sh
 ```
