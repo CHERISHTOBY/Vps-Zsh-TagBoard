@@ -39,6 +39,6 @@
 
 ```bash
 # 下载并运行脚本
-curl -O https://example.com/VPS-Zsh-Dashboard.sh
+https://github.com/CHERISHTOBY/Vps-Zsh-TagBoard.sh
 sudo bash VPS-Zsh-TagBoard.sh
 ```
