@@ -35,10 +35,8 @@
 
 
 
-## 🚀 快速开始
 
+## 🚀 快速开始
 ```bash
-# 下载并运行脚本
-curl https://github.com/CHERISHTOBY/Vps-Zsh-TagBoard.sh
-sudo bash VPS-Zsh-TagBoard.sh
-```
+# 下载并运行
+bash <(curl -s https://raw.githubusercontent.com/CHERISHTOBY/Vps-Zsh-TagBoard/main/VPS-Zsh-TagBoard.sh)
