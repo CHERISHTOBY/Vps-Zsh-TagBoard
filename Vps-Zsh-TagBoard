@@ -29,7 +29,7 @@ if ! id "$TARGET_USER" &>/dev/null; then
 fi
 SUDO_CONF="/etc/sudoers.d/$TARGET_USER"
 sudo bash -c "cat << 'SUDO_EOF' > $SUDO_CONF
-# DEBIAN-ZSH-DASHBOARD
+# VPS-ZSH-TAGBOARD
 $TARGET_USER ALL=(ALL) NOPASSWD:ALL
 SUDO_EOF"
 sudo chmod 0440 "$SUDO_CONF"
@@ -45,7 +45,7 @@ write_zshrc() {
        sudo cp "$ZSHRC_PATH" "$HOME_DIR/.zshrc.${BAK_DATE}.bak"
    fi
    sudo bash -c "cat << 'ZSHRC_EOF' > $ZSHRC_PATH
-# DEBIAN-ZSH-DASHBOARD
+# VPS-ZSH-TAGBOARD
 autoload -Uz compinit && compinit
 zstyle ':completion:*' menu select
 HISTSIZE=5000
