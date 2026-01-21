@@ -41,7 +41,7 @@
 
 ## 🚀 快速开始
 ```bash
-sudo bash -c "$(curl -s https://raw.githubusercontent.com/CHERISHTOBY/Vps-Zsh-TagBoard/main/install.sh)"
+bash -c "$(curl -s https://raw.githubusercontent.com/CHERISHTOBY/Vps-Zsh-TagBoard/main/install.sh)"
 ```
 
 ## 📝 安装说明
