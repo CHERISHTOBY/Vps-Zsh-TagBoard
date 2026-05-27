@@ -25,7 +25,7 @@ REAL_USER="${SUDO_USER:-$(whoami)}"
 # 安装或覆盖安装
 do_install() {
     echo -e "\n\e[1;32m>>> 开始安装/覆盖安装 Zsh 看板 <<<\e[0m"
-    sudo apt update && sudo apt install zsh grep -y
+    sudo apt update && sudo apt install zsh grep zsh-syntax-highlighting zsh-autosuggestions -y
 
     # 确定目标用户（禁止 root）
     while true; do
@@ -130,12 +130,24 @@ SUDO_EOF"
 
         sudo bash -c "cat << 'ZSHRC_EOF' > \"$zshrc\"
 # VPS-ZSH-TAGBOARD
+
+# 语法高亮
+[[ -f /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]] && \\
+    source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+
+# 自动建议（根据历史记录提示命令）
+[[ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]] && \\
+    source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+
+# 补全系统初始化
 autoload -Uz compinit && compinit
-setopt interactive_comments
 zstyle ':completion:*' menu select
+
+# 历史记录设置
 HISTSIZE=5000
 SAVEHIST=5000
 setopt SHARE_HISTORY
+setopt INTERACTIVE_COMMENTS
 autoload -U up-line-or-beginning-search && zle -N up-line-or-beginning-search
 bindkey \"^[[A\" up-line-or-beginning-search
 bindkey \"^[[B\" down-line-or-beginning-search
