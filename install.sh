@@ -22,9 +22,55 @@ fi
 REAL_USER="${SUDO_USER:-$(whoami)}"
 
 # ---------- 函数定义 ----------
-# 安装或覆盖安装
-do_install() {
-    echo -e "\n\e[1;32m>>> 开始安装/覆盖安装 Zsh 看板 <<<\e[0m"
+
+# 生成 .zshrc（含备份）
+write_zshrc() {
+    local home_dir=$1
+    local zshrc="${home_dir}/.zshrc"
+    local bak_date=$(date +%Y%m%d)
+    local bak_file="${home_dir}/.zshrc.${bak_date}.bak"
+
+    if [ -f "$zshrc" ] && [ ! -f "$bak_file" ]; then
+        sudo cp "$zshrc" "$bak_file"
+    fi
+
+    sudo bash -c "cat << 'ZSHRC_EOF' > \"$zshrc\"
+# VPS-ZSH-TAGBOARD
+
+# 语法高亮
+[[ -f /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]] && \\
+    source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+
+# 自动建议（根据历史记录提示命令）
+[[ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]] && \\
+    source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+
+# 补全系统初始化
+autoload -Uz compinit && compinit
+zstyle ':completion:*' menu select
+
+# 历史记录设置
+HISTSIZE=5000
+SAVEHIST=5000
+setopt SHARE_HISTORY
+setopt INTERACTIVE_COMMENTS
+autoload -U up-line-or-beginning-search && zle -N up-line-or-beginning-search
+bindkey \"^[[A\" up-line-or-beginning-search
+bindkey \"^[[B\" down-line-or-beginning-search
+
+if [[ -f /etc/os-release ]]; then
+   OS_ID=\$(grep -E '^ID=' /etc/os-release | cut -d= -f2 | tr -d '\"')
+fi
+typeset -A colors
+colors=(debian 125 ubuntu 202 kali 231 raspbian 125 pop 202 deepin 125 devuan 60 default 10)
+MY_CLR=\${colors[\$OS_ID]:-\$colors[default]}
+PROMPT=\"%F{\$MY_CLR}%n@%m%f:%F{blue}%~%f%# \"
+ZSHRC_EOF"
+}
+
+# 安装基础 Zsh 环境（公共部分：Zsh包 + 用户 + sudo免密 + .zshrc）
+setup_zsh_base() {
+    echo -e "\n\e[1;32m>>> 开始安装 Zsh 基础环境 <<<\e[0m"
     sudo apt update && sudo apt install zsh grep zsh-syntax-highlighting zsh-autosuggestions -y
 
     # 确定目标用户（禁止 root）
@@ -56,6 +102,19 @@ SUDO_EOF"
 
     # 设置 Zsh 为默认 Shell
     sudo chsh -s "$(which zsh)" "$TARGET_USER"
+
+    # 生成 .zshrc（含备份）
+    TARGET_HOME=$(eval echo "~$TARGET_USER")
+    write_zshrc "$TARGET_HOME"
+
+    # 修正权限
+    sudo chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME"
+}
+
+# 完整安装（Zsh + 看板）
+do_install() {
+    echo -e "\n\e[1;32m>>> 开始完整安装 Zsh 看板 <<<\e[0m"
+    setup_zsh_base
 
     # 收集看板信息与到期参数
     echo -e "\n--- 自定义看板信息 ---"
@@ -115,54 +174,7 @@ SUDO_EOF"
     fi
     OS_NAME=$(grep "PRETTY_NAME" /etc/os-release | cut -d '"' -f 2 || uname -sr)
 
-    TARGET_HOME=$(eval echo "~$TARGET_USER")
-
-    # 生成 .zshrc（含备份）
-    write_zshrc() {
-        local home_dir=$1
-        local zshrc="${home_dir}/.zshrc"
-        local bak_date=$(date +%Y%m%d)
-        local bak_file="${home_dir}/.zshrc.${bak_date}.bak"
-
-        if [ -f "$zshrc" ] && [ ! -f "$bak_file" ]; then
-            sudo cp "$zshrc" "$bak_file"
-        fi
-
-        sudo bash -c "cat << 'ZSHRC_EOF' > \"$zshrc\"
-# VPS-ZSH-TAGBOARD
-
-# 语法高亮
-[[ -f /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]] && \\
-    source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-
-# 自动建议（根据历史记录提示命令）
-[[ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]] && \\
-    source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
-
-# 补全系统初始化
-autoload -Uz compinit && compinit
-zstyle ':completion:*' menu select
-
-# 历史记录设置
-HISTSIZE=5000
-SAVEHIST=5000
-setopt SHARE_HISTORY
-setopt INTERACTIVE_COMMENTS
-autoload -U up-line-or-beginning-search && zle -N up-line-or-beginning-search
-bindkey \"^[[A\" up-line-or-beginning-search
-bindkey \"^[[B\" down-line-or-beginning-search
-
-if [[ -f /etc/os-release ]]; then
-   OS_ID=\$(grep -E '^ID=' /etc/os-release | cut -d= -f2 | tr -d '\"')
-fi
-typeset -A colors
-colors=(debian 125 ubuntu 202 kali 231 raspbian 125 pop 202 deepin 125 devuan 60 default 10)
-MY_CLR=\${colors[\$OS_ID]:-\$colors[default]}
-PROMPT=\"%F{\$MY_CLR}%n@%m%f:%F{blue}%~%f%# \"
-ZSHRC_EOF"
-    }
-
-    write_zshrc "$TARGET_HOME"
+    # TARGET_HOME 已由 setup_zsh_base 设置
 
     # 写入配置文件（安全方式）
     CONF_FILE="${TARGET_HOME}/.welcome.conf"
@@ -184,7 +196,7 @@ YELLOW='\033[1;33m'
 RESET='\e[0m'
 
 if [ \"\$ADD_VAL\" = \"infinite\" ]; then
-    DISP=\"\${WHITE}永久 (∞)\"
+    DISP=\"\${WHITE}∞\"
 else
     ANCHOR_D=\$SAFE_D
     ADD_STR=\"\$ADD_VAL\"
@@ -232,7 +244,7 @@ done
 
 echo \"\"
 echo -e \"\${WHITE}[\$OS_NAME] \${CPU_CORES}C/\${MEM_SIZE}\${RESET}\"
-echo -e \"\${WHITE}到期: \$DISP\${WHITE}\$TAGS \${RESET}\"
+echo -e \"\$DISP\${WHITE}\$TAGS \${RESET}\"
 echo \"\"
 WELCOME_EOF"
 
@@ -249,6 +261,19 @@ ZPROFILE_EOF"
     sudo chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME"
 
     echo -e "\n\e[1;32m状态: 配置完成！\e[0m"
+    echo "------------------------------------------------"
+    echo "1. 立即切换环境: exec su - $TARGET_USER"
+    [ "$IS_NEW_USER" = true ] && echo "2. 新用户设置密码: sudo passwd $TARGET_USER"
+    echo "备份提示: 原始 .zshrc 已备份至 ~/.zshrc.XXXXXXXX.bak"
+    echo "------------------------------------------------"
+}
+
+# 仅安装 Zsh（不含看板）
+do_install_zsh_only() {
+    echo -e "\n\e[1;32m>>> 仅安装 Zsh 基础环境 <<<\e[0m"
+    setup_zsh_base
+
+    echo -e "\n\e[1;32m状态: Zsh 基础环境配置完成！\e[0m"
     echo "------------------------------------------------"
     echo "1. 立即切换环境: exec su - $TARGET_USER"
     [ "$IS_NEW_USER" = true ] && echo "2. 新用户设置密码: sudo passwd $TARGET_USER"
@@ -339,20 +364,22 @@ do_uninstall() {
     echo -e "\e[1;32m卸载完成。请手动检查 .zshrc 是否需要删除（如不再使用 Zsh）。\e[0m"
 }
 
-# ---------- 主菜单（简洁等列版） ----------
+# ---------- 主菜单 ----------
 echo "==================================="
 echo "    看板管理脚本"
 echo "==================================="
-echo "  1) 安装看板"
-echo "  2) 移除看板"
-echo "  3) 彻底卸载"
+echo "  1) 完整安装"
+echo "  2) 仅安装Zsh"
+echo "  3) 卸载看板"
+echo "  4) 彻底卸载"
 echo "==================================="
-read -re -p "请输入编号 (1-3，默认1): " MENU_OPT
+read -re -p "请输入编号 (1-4，默认1): " MENU_OPT
 MENU_OPT="${MENU_OPT:-1}"
 
 case "$MENU_OPT" in
     1) do_install ;;
-    2) do_remove_welcome ;;
-    3) do_uninstall ;;
+    2) do_install_zsh_only ;;
+    3) do_remove_welcome ;;
+    4) do_uninstall ;;
     *) echo "无效选项，退出。"; exit 1 ;;
 esac
