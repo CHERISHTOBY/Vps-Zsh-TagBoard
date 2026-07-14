@@ -196,7 +196,7 @@ YELLOW='\033[1;33m'
 RESET='\e[0m'
 
 if [ \"\$ADD_VAL\" = \"infinite\" ]; then
-    DISP=\"\""
+    DISP=\"\${WHITE}∞\""
 else
     ANCHOR_D=\$SAFE_D
     ADD_STR=\"\$ADD_VAL\"
@@ -241,6 +241,10 @@ TAGS=\"\"
 for val in \"\$IN_P\" \"\$IN_L\" \"\$IN_N\"; do
     [ -n \"\$val\" ] && TAGS=\"\$TAGS • \$val\"
 done
+
+if [ \"\$ADD_VAL\" = \"infinite\" ] && [ -z \"\$TAGS\" ]; then
+    DISP=\"\"
+fi
 
 echo \"\"
 echo -e \"\${WHITE}[\$OS_NAME] \${CPU_CORES}C/\${MEM_SIZE}\${RESET}\"
