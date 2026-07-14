@@ -196,7 +196,7 @@ YELLOW='\033[1;33m'
 RESET='\e[0m'
 
 if [ \"\$ADD_VAL\" = \"infinite\" ]; then
-    DISP=\"\${WHITE}∞\"
+    DISP=\"\""
 else
     ANCHOR_D=\$SAFE_D
     ADD_STR=\"\$ADD_VAL\"
