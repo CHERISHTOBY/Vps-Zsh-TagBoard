@@ -34,15 +34,15 @@ write_zshrc() {
         sudo cp "$zshrc" "$bak_file"
     fi
 
-    sudo bash -c "cat << 'ZSHRC_EOF' > \"$zshrc\"
+    sudo tee "$zshrc" > /dev/null << 'ZSHRC_EOF'
 # VPS-ZSH-TAGBOARD
 
 # 语法高亮
-[[ -f /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]] && \\
+[[ -f /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]] && \
     source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
 # 自动建议（根据历史记录提示命令）
-[[ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]] && \\
+[[ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]] && \
     source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 
 # 补全系统初始化
@@ -55,17 +55,17 @@ SAVEHIST=5000
 setopt SHARE_HISTORY
 setopt INTERACTIVE_COMMENTS
 autoload -U up-line-or-beginning-search && zle -N up-line-or-beginning-search
-bindkey \"^[[A\" up-line-or-beginning-search
-bindkey \"^[[B\" down-line-or-beginning-search
+bindkey "^[[A" up-line-or-beginning-search
+bindkey "^[[B" down-line-or-beginning-search
 
 if [[ -f /etc/os-release ]]; then
-   OS_ID=\$(grep -E '^ID=' /etc/os-release | cut -d= -f2 | tr -d '\"')
+   OS_ID=$(grep -E '^ID=' /etc/os-release | cut -d= -f2 | tr -d '"')
 fi
 typeset -A colors
 colors=(debian 125 ubuntu 202 kali 231 raspbian 125 pop 202 deepin 125 devuan 60 default 10)
-MY_CLR=\${colors[\$OS_ID]:-\$colors[default]}
-PROMPT=\"%F{\$MY_CLR}%n@%m%f:%F{blue}%~%f%# \"
-ZSHRC_EOF"
+MY_CLR=${colors[$OS_ID]:-$colors[default]}
+PROMPT="%F{$MY_CLR}%n@%m%f:%F{blue}%~%f%# "
+ZSHRC_EOF
 }
 
 # 安装基础 Zsh 环境（公共部分：Zsh包 + 用户 + sudo免密 + .zshrc）
@@ -94,10 +94,10 @@ setup_zsh_base() {
 
     # sudo 免密
     SUDO_FILE="/etc/sudoers.d/$TARGET_USER"
-    sudo bash -c "cat << 'SUDO_EOF' > $SUDO_FILE
+    sudo tee "$SUDO_FILE" > /dev/null << SUDO_EOF
 # VPS-ZSH-TAGBOARD
 $TARGET_USER ALL=(ALL) NOPASSWD:ALL
-SUDO_EOF"
+SUDO_EOF
     sudo chmod 0440 "$SUDO_FILE"
 
     # 设置 Zsh 为默认 Shell
@@ -185,7 +185,7 @@ do_install() {
 
     # 写欢迎看板脚本
     WELCOME_SH="${TARGET_HOME}/.welcome.sh"
-    sudo bash -c "cat << 'WELCOME_EOF' > \"$WELCOME_SH\"
+    sudo tee "$WELCOME_SH" > /dev/null << 'WELCOME_EOF'
 #!/bin/zsh
 source ~/.welcome.conf
 
@@ -195,71 +195,71 @@ GREEN='\e[1;32m'
 YELLOW='\033[1;33m'
 RESET='\e[0m'
 
-if [ \"\$ADD_VAL\" = \"infinite\" ]; then
-    DISP=\"\${WHITE}∞\""
+if [ "$ADD_VAL" = "infinite" ]; then
+    DISP="${WHITE}∞"
 else
-    ANCHOR_D=\$SAFE_D
-    ADD_STR=\"\$ADD_VAL\"
-    INIT_M=\$START_M
-    INIT_Y=\$(date +%Y)
+    ANCHOR_D=$SAFE_D
+    ADD_STR="$ADD_VAL"
+    INIT_M=$START_M
+    INIT_Y=$(date +%Y)
 
-    NOW_TS=\$(date +%s)
-    LAST_D_INIT=\$(date -d \"\$INIT_Y-\$INIT_M-01 +1 month -1 day\" +%d)
-    [ \"\$ANCHOR_D\" -gt \"\$LAST_D_INIT\" ] && ACT_D=\$LAST_D_INIT || ACT_D=\$ANCHOR_D
-    TARGET_TS=\$(date -d \"\$INIT_Y-\$INIT_M-\$ACT_D 23:59:59\" +%s)
+    NOW_TS=$(date +%s)
+    LAST_D_INIT=$(date -d "$INIT_Y-$INIT_M-01 +1 month -1 day" +%d)
+    [ "$ANCHOR_D" -gt "$LAST_D_INIT" ] && ACT_D=$LAST_D_INIT || ACT_D=$ANCHOR_D
+    TARGET_TS=$(date -d "$INIT_Y-$INIT_M-$ACT_D 23:59:59" +%s)
 
     LOOP_GUARD=0
-    while [ \"\$TARGET_TS\" -lt \"\$NOW_TS\" ] && [ \"\$LOOP_GUARD\" -lt 100 ]; do
-        CUR_Y=\$(date -d \"@\$TARGET_TS\" +%Y)
-        CUR_M=\$(date -d \"@\$TARGET_TS\" +%m)
-        NEXT_BASE_Y=\$(date -d \"\$CUR_Y-\$CUR_M-01 + \$ADD_STR\" +%Y)
-        NEXT_BASE_M=\$(date -d \"\$CUR_Y-\$CUR_M-01 + \$ADD_STR\" +%m)
-        LAST_D_NEXT=\$(date -d \"\$NEXT_BASE_Y-\$NEXT_BASE_M-01 +1 month -1 day\" +%d)
-        [ \"\$ANCHOR_D\" -gt \"\$LAST_D_NEXT\" ] && ACT_D=\$LAST_D_NEXT || ACT_D=\$ANCHOR_D
-        TARGET_TS=\$(date -d \"\$NEXT_BASE_Y-\$NEXT_BASE_M-\$ACT_D 23:59:59\" +%s)
+    while [ "$TARGET_TS" -lt "$NOW_TS" ] && [ "$LOOP_GUARD" -lt 100 ]; do
+        CUR_Y=$(date -d "@$TARGET_TS" +%Y)
+        CUR_M=$(date -d "@$TARGET_TS" +%m)
+        NEXT_BASE_Y=$(date -d "$CUR_Y-$CUR_M-01 + $ADD_STR" +%Y)
+        NEXT_BASE_M=$(date -d "$CUR_Y-$CUR_M-01 + $ADD_STR" +%m)
+        LAST_D_NEXT=$(date -d "$NEXT_BASE_Y-$NEXT_BASE_M-01 +1 month -1 day" +%d)
+        [ "$ANCHOR_D" -gt "$LAST_D_NEXT" ] && ACT_D=$LAST_D_NEXT || ACT_D=$ANCHOR_D
+        TARGET_TS=$(date -d "$NEXT_BASE_Y-$NEXT_BASE_M-$ACT_D 23:59:59" +%s)
         ((LOOP_GUARD++))
     done
 
-    EXP_DATE=\$(date -d \"@\$TARGET_TS\" +%Y-%m-%d)
-    TODAY_ZERO=\$(date -d \"\$(date +%Y-%m-%d) 00:00:00\" +%s)
-    DAYS_LEFT=\$(( (TARGET_TS - TODAY_ZERO) / 86400 ))
+    EXP_DATE=$(date -d "@$TARGET_TS" +%Y-%m-%d)
+    TODAY_ZERO=$(date -d "$(date +%Y-%m-%d) 00:00:00" +%s)
+    DAYS_LEFT=$(( (TARGET_TS - TODAY_ZERO) / 86400 ))
 
-    if [ \"\$DAYS_LEFT\" -lt 0 ]; then
-        DISP=\"\${RED}配置异常 (✘﹏✘)\"
-    elif [ \"\$DAYS_LEFT\" -eq 0 ]; then
-        DISP=\"\${YELLOW}到期啦，就是今天！(๑•̀ㅂ•́)و✧\"
+    if [ "$DAYS_LEFT" -lt 0 ]; then
+        DISP="${RED}配置异常 (✘﹏✘)"
+    elif [ "$DAYS_LEFT" -eq 0 ]; then
+        DISP="${YELLOW}到期啦，就是今天！(๑•̀ㅂ•́)و✧"
     else
-        if [ \"\$DAYS_LEFT\" -le 7 ]; then
-            DISP=\"\${WHITE}\$EXP_DATE \${RED}(\${DAYS_LEFT}d)\"
+        if [ "$DAYS_LEFT" -le 7 ]; then
+            DISP="${WHITE}$EXP_DATE ${RED}(${DAYS_LEFT}d)"
         else
-            DISP=\"\${WHITE}\$EXP_DATE (\${DAYS_LEFT}d)\"
+            DISP="${WHITE}$EXP_DATE (${DAYS_LEFT}d)"
         fi
     fi
 fi
 
-TAGS=\"\"
-for val in \"\$IN_P\" \"\$IN_L\" \"\$IN_N\"; do
-    [ -n \"\$val\" ] && TAGS=\"\$TAGS • \$val\"
+TAGS=""
+for val in "$IN_P" "$IN_L" "$IN_N"; do
+    [ -n "$val" ] && TAGS="$TAGS • $val"
 done
 
-if [ \"\$ADD_VAL\" = \"infinite\" ] && [ -z \"\$TAGS\" ]; then
-    DISP=\"\"
+if [ "$ADD_VAL" = "infinite" ] && [ -z "$TAGS" ]; then
+    DISP=""
 fi
 
-echo \"\"
-echo -e \"\${WHITE}[\$OS_NAME] \${CPU_CORES}C/\${MEM_SIZE}\${RESET}\"
-echo -e \"\$DISP\${WHITE}\$TAGS \${RESET}\"
-echo \"\"
-WELCOME_EOF"
+echo ""
+echo -e "${WHITE}[$OS_NAME] ${CPU_CORES}C/${MEM_SIZE}${RESET}"
+echo -e "$DISP${WHITE}$TAGS ${RESET}"
+echo ""
+WELCOME_EOF
 
     sudo chmod +x "$WELCOME_SH"
 
     # 创建 .zprofile 自动加载
     ZPROFILE="${TARGET_HOME}/.zprofile"
-    sudo bash -c "cat << 'ZPROFILE_EOF' > \"$ZPROFILE\"
+    sudo tee "$ZPROFILE" > /dev/null << 'ZPROFILE_EOF'
 [[ -f ~/.zshrc ]] && source ~/.zshrc
 [[ -f ~/.welcome.sh ]] && zsh ~/.welcome.sh
-ZPROFILE_EOF"
+ZPROFILE_EOF
 
     # 统一修正权限
     sudo chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME"
