@@ -54,9 +54,17 @@ HISTSIZE=5000
 SAVEHIST=5000
 setopt SHARE_HISTORY
 setopt INTERACTIVE_COMMENTS
-autoload -U up-line-or-beginning-search && zle -N up-line-or-beginning-search
+autoload -Uz up-line-or-beginning-search down-line-or-beginning-search
+zle -N up-line-or-beginning-search
+zle -N down-line-or-beginning-search
 bindkey "^[[A" up-line-or-beginning-search
 bindkey "^[[B" down-line-or-beginning-search
+bindkey "^[OA" up-line-or-beginning-search
+bindkey "^[OB" down-line-or-beginning-search
+function _tmux-ignore-focus() { :; }
+zle -N _tmux-ignore-focus
+bindkey "^[I" _tmux-ignore-focus
+bindkey "^[O" _tmux-ignore-focus
 
 if [[ -f /etc/os-release ]]; then
    OS_ID=$(grep -E '^ID=' /etc/os-release | cut -d= -f2 | tr -d '"')
