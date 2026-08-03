@@ -112,7 +112,7 @@ SUDO_EOF
     sudo chsh -s "$(which zsh)" "$TARGET_USER"
 
     # 生成 .zshrc（含备份）
-    TARGET_HOME=$(eval echo "~$TARGET_USER")
+    TARGET_HOME=$(getent passwd "$TARGET_USER" | cut -d: -f6)
     write_zshrc "$TARGET_HOME"
 
     # 修正权限
@@ -156,7 +156,7 @@ do_install() {
             done
             while true; do
                 echo "选择账单周期: 1.月付 2.季付 3.半年 4.年付（默认）"
-                read -p "请输入编号 (1-4): " CYCLE_OPT
+                read -rep "请输入编号 (1-4): " CYCLE_OPT
                 case ${CYCLE_OPT:-4} in
                     1) ADD_VAL="1 month"; break ;;
                     2) ADD_VAL="3 month"; break ;;
@@ -199,7 +199,6 @@ source ~/.welcome.conf
 
 WHITE='\e[0;37m'
 RED='\e[1;31m'
-GREEN='\e[1;32m'
 YELLOW='\033[1;33m'
 RESET='\e[0m'
 
@@ -266,7 +265,7 @@ WELCOME_EOF
     ZPROFILE="${TARGET_HOME}/.zprofile"
     sudo tee "$ZPROFILE" > /dev/null << 'ZPROFILE_EOF'
 [[ -f ~/.zshrc ]] && source ~/.zshrc
-[[ -f ~/.welcome.sh ]] && zsh ~/.welcome.sh
+[[ -f ~/.welcome.sh ]] && source ~/.welcome.sh
 ZPROFILE_EOF
 
     # 统一修正权限
@@ -305,7 +304,7 @@ do_remove_welcome() {
         break
     done
 
-    TARGET_HOME=$(eval echo "~$TARGET_USER")
+    TARGET_HOME=$(getent passwd "$TARGET_USER" | cut -d: -f6)
     FILES=("$TARGET_HOME/.welcome.sh" "$TARGET_HOME/.welcome.conf" "$TARGET_HOME/.zprofile")
     echo -e "\n\e[1;33m即将删除以下文件 (若存在)：\e[0m"
     for f in "${FILES[@]}"; do
@@ -355,7 +354,7 @@ do_uninstall() {
     fi
 
     # 移除看板文件
-    TARGET_HOME=$(eval echo "~$TARGET_USER")
+    TARGET_HOME=$(getent passwd "$TARGET_USER" | cut -d: -f6)
     sudo rm -f "$TARGET_HOME/.welcome.sh" "$TARGET_HOME/.welcome.conf" "$TARGET_HOME/.zprofile"
 
     # 移除 sudo 免密配置
