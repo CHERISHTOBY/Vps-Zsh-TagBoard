@@ -23,9 +23,10 @@ REAL_USER="${SUDO_USER:-$(whoami)}"
 
 # ---------- 函数定义 ----------
 
-# 生成 .zshrc（含备份）
+# 生成 .zshrc（含备份；enable_hist: true 开启历史记录 / false 关闭）
 write_zshrc() {
     local home_dir=$1
+    local enable_hist=$2
     local zshrc="${home_dir}/.zshrc"
     local bak_date=$(date +%Y%m%d)
     local bak_file="${home_dir}/.zshrc.${bak_date}.bak"
@@ -34,7 +35,8 @@ write_zshrc() {
         sudo cp "$zshrc" "$bak_file"
     fi
 
-    sudo tee "$zshrc" > /dev/null << 'ZSHRC_EOF'
+    # 第一部分：插件与补全（公共）
+    sudo tee "$zshrc" > /dev/null << 'ZSHRC_HEAD_EOF'
 # VPS-ZSH-TAGBOARD
 
 # 语法高亮
@@ -49,7 +51,13 @@ write_zshrc() {
 autoload -Uz compinit && compinit
 zstyle ':completion:*' menu select
 
-# 历史记录设置
+ZSHRC_HEAD_EOF
+
+    # 第二部分：历史记录（按安装时的选项生成）
+    if [ "$enable_hist" = true ]; then
+        sudo tee -a "$zshrc" > /dev/null << 'ZSHRC_HIST_ON_EOF'
+# 历史记录设置（已开启：保留 5000 条，跨会话共享）
+HISTFILE="$HOME/.zsh_history"
 HISTSIZE=5000
 SAVEHIST=5000
 setopt SHARE_HISTORY
@@ -61,6 +69,19 @@ bindkey "^[[A" up-line-or-beginning-search
 bindkey "^[[B" down-line-or-beginning-search
 bindkey "^[OA" up-line-or-beginning-search
 bindkey "^[OB" down-line-or-beginning-search
+
+ZSHRC_HIST_ON_EOF
+    else
+        sudo tee -a "$zshrc" > /dev/null << 'ZSHRC_HIST_OFF_EOF'
+# 历史记录设置（未开启：不保存任何历史记录）
+HISTSIZE=0
+SAVEHIST=0
+
+ZSHRC_HIST_OFF_EOF
+    fi
+
+    # 第三部分：按键与提示符（公共）
+    sudo tee -a "$zshrc" > /dev/null << 'ZSHRC_TAIL_EOF'
 function _tmux-ignore-focus() { :; }
 zle -N _tmux-ignore-focus
 bindkey "^[I" _tmux-ignore-focus
@@ -73,13 +94,23 @@ typeset -A colors
 colors=(debian 125 ubuntu 202 kali 231 raspbian 125 pop 202 deepin 125 devuan 60 default 10)
 MY_CLR=${colors[$OS_ID]:-$colors[default]}
 PROMPT="%F{$MY_CLR}%n@%m%f:%F{blue}%~%f%# "
-ZSHRC_EOF
+ZSHRC_TAIL_EOF
 }
 
 # 安装基础 Zsh 环境（公共部分：Zsh包 + 用户 + sudo免密 + .zshrc）
 setup_zsh_base() {
     echo -e "\n\e[1;32m>>> 开始安装 Zsh 基础环境 <<<\e[0m"
     sudo apt update && sudo apt install zsh grep zsh-syntax-highlighting zsh-autosuggestions -y
+
+    # 历史记录选项（默认不开启，开启后记录 5000 条）
+    read -re -p "是否开启命令历史记录？(y/N，默认不开启): " ENABLE_HIST
+    if [[ "$ENABLE_HIST" =~ ^[Yy]$ ]]; then
+        ENABLE_HIST=true
+        echo "已开启：历史记录将保留 5000 条并跨会话共享。"
+    else
+        ENABLE_HIST=false
+        echo "未开启：Zsh 不保存任何历史记录。"
+    fi
 
     # 确定目标用户（禁止 root）
     while true; do
@@ -111,9 +142,9 @@ SUDO_EOF
     # 设置 Zsh 为默认 Shell
     sudo chsh -s "$(which zsh)" "$TARGET_USER"
 
-    # 生成 .zshrc（含备份）
+    # 生成 .zshrc（含备份，历史记录按选项生成）
     TARGET_HOME=$(getent passwd "$TARGET_USER" | cut -d: -f6)
-    write_zshrc "$TARGET_HOME"
+    write_zshrc "$TARGET_HOME" "$ENABLE_HIST"
 
     # 修正权限
     sudo chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME"
