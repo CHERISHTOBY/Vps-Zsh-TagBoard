@@ -51,6 +51,15 @@ write_zshrc() {
 autoload -Uz compinit && compinit
 zstyle ':completion:*' menu select
 
+# 目录/文件彩色显示 (ls 输出与 Tab 补全列表)
+autoload -U colors && colors
+export LS_COLORS='di=1;34:ln=1;36:so=1;35:pi=1;33:ex=1;32:bd=1;33;40:cd=1;33;40:su=1;35;41:sg=1;30;43:tw=1;33;41:ow=1;33;42'
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+alias ls='ls --color=auto'
+alias ll='ls -lh --color=auto'
+alias la='ls -lAh --color=auto'
+alias l='ls -CF --color=auto'
+
 ZSHRC_HEAD_EOF
 
     # 第二部分：历史记录（按安装时的选项生成）

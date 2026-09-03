@@ -7,6 +7,7 @@ Debian 延伸版专用 Zsh 看板脚本，为你的 VPS 终端提供优雅的信
 ### 🎨 智能终端美化
 - 自动安装并配置 Zsh Shell
 - 根据操作系统自动着色（Debian/Ubuntu/Kali/Raspbian/Pop!_OS/Deepin/Devuan 等）
+- **目录/文件彩色显示**：`ls` 输出按文件类型着色，Tab 补全列表同样着色（`LS_COLORS`）
 - 增强的命令补全功能（菜单式选择）
 - **可选历史记录开关**：安装 Zsh 后询问是否开启，默认不开启
 - 开启后保留 5000 条历史记录并跨会话共享（`~/.zsh_history`），支持上下箭头快速匹配
@@ -125,7 +126,11 @@ bash -c "$(curl -s https://raw.githubusercontent.com/rsdgnchen/vps-zsh-tag/main/
 
 ## 🔄 更新日志
 
-### 历史记录开关 (最新版本)
+### 修复: zsh 目录不显示颜色 (最新版本)
+- 生成的 `.zshrc` 新增 `LS_COLORS` 与 `ls --color=auto` 系列别名（`ls`/`ll`/`la`/`l`），目录及文件按类型着色
+- Tab 补全列表同步着色（`zstyle ':completion:*' list-colors`）
+
+### 历史记录开关
 - 安装 Zsh 后新增"是否开启历史记录"选项，**默认不开启**
 - 开启后保留 5000 条历史（`HISTSIZE`/`SAVEHIST`）并跨会话共享，自动写入 `~/.zsh_history`
 - 未开启时生成的 `.zshrc` 显式关闭历史（`HISTSIZE=0`），不保存任何记录
